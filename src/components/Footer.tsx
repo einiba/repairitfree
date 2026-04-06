@@ -63,6 +63,11 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-border mt-8 pt-4 text-xs text-muted">
+          <p className="text-center leading-relaxed mb-4 max-w-2xl mx-auto">
+            RepairItFree is reader-supported. When you buy through links on our
+            site, we may earn an affiliate commission at no extra cost to you. As
+            an Amazon Associate we earn from qualifying purchases.
+          </p>
           <div className="flex flex-wrap justify-center gap-4 mb-3">
             <Link href="/terms" className="hover:text-primary underline">
               Terms of Service

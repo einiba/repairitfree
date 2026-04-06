@@ -18,23 +18,36 @@ export async function generateMetadata({
   };
 }
 
+function parseTimeToISO(timeEstimate: string): string {
+  const hours = timeEstimate.match(/(\d+)\s*h/i);
+  const minutes = timeEstimate.match(/(\d+)\s*m/i);
+  if (hours && minutes) return `PT${hours[1]}H${minutes[1]}M`;
+  if (hours) return `PT${hours[1]}H`;
+  const nums = timeEstimate.match(/(\d+)/);
+  return nums ? `PT${nums[1]}M` : "PT30M";
+}
+
+function parseCostValue(costEstimate: string): string {
+  const match = costEstimate.match(/[\d.]+/);
+  return match ? match[0] : "0";
+}
+
 function HowToSchema({ guide }: { guide: NonNullable<ReturnType<typeof getGuide>> }) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: `How to Fix ${guide.brand} ${guide.category} ${guide.problemTitle}`,
+    name: `${guide.problemTitle} - ${guide.brand} ${guide.category}`,
     description: guide.quickDiagnosis,
-    totalTime: `PT${guide.timeEstimate.replace(/[^0-9]/g, "")}M`,
+    totalTime: parseTimeToISO(guide.timeEstimate),
     estimatedCost: {
       "@type": "MonetaryAmount",
       currency: "USD",
-      value: guide.costEstimate,
+      value: parseCostValue(guide.costEstimate),
     },
     tool: guide.toolsNeeded.map((t) => ({ "@type": "HowToTool", name: t })),
     supply: guide.partsNeeded.map((p) => ({
       "@type": "HowToSupply",
       name: p.name,
-      estimatedCost: p.costRange,
     })),
     step: guide.steps.map((s) => ({
       "@type": "HowToStep",
@@ -51,40 +64,36 @@ function HowToSchema({ guide }: { guide: NonNullable<ReturnType<typeof getGuide>
 }
 
 function FAQSchema({ guide }: { guide: NonNullable<ReturnType<typeof getGuide>> }) {
+  const mainEntity: Array<{ "@type": string; name: string; acceptedAnswer: { "@type": string; text: string } }> = [];
+
+  if (guide.alternativeCauses.length > 0) {
+    mainEntity.push({
+      "@type": "Question",
+      name: `What if ${guide.problemTitle} fix didn't work?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: guide.alternativeCauses.join(". "),
+      },
+    });
+  }
+
+  if (guide.whenToCallPro) {
+    mainEntity.push({
+      "@type": "Question",
+      name: "When should I call a professional?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: guide.whenToCallPro,
+      },
+    });
+  }
+
+  if (mainEntity.length === 0) return null;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: `What does the ${guide.problemTitle} mean on a ${guide.brand} ${guide.category}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: guide.quickDiagnosis,
-        },
-      },
-      {
-        "@type": "Question",
-        name: `How much does it cost to fix a ${guide.brand} ${guide.category} ${guide.problemTitle}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `The estimated cost for parts is ${guide.costEstimate}. The repair difficulty is ${guide.difficulty} and takes about ${guide.timeEstimate}.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name: `Can I fix a ${guide.brand} ${guide.category} ${guide.problemTitle} myself?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text:
-            guide.difficulty === "Easy"
-              ? "Yes! This is an easy repair that most people can do with basic tools."
-              : guide.difficulty === "Medium"
-                ? "Yes, with some patience. This is a medium-difficulty repair."
-                : "This is a harder repair. Read the guide carefully and consider calling a professional if you're unsure.",
-        },
-      },
-    ],
+    mainEntity,
   };
   return (
     <script
