@@ -12,6 +12,12 @@ import { batch002Guides } from "./guides-batch-002";
 import { batch003Guides } from "./guides-batch-003";
 import { batch004Guides } from "./guides-batch-004";
 import { batch005Guides } from "./guides-batch-005";
+import { matrixGuides001 } from "./guides-matrix-001";
+import { matrixGuides002 } from "./guides-matrix-002";
+import { matrixGuides003 } from "./guides-matrix-003";
+import { matrixGuides004 } from "./guides-matrix-004";
+import { matrixGuides005 } from "./guides-matrix-005";
+import { matrixGuides006 } from "./guides-matrix-006";
 
 const coreGuides: Guide[] = [
   {
@@ -427,6 +433,12 @@ export const guides: Guide[] = [
   ...batch003Guides,
   ...batch004Guides,
   ...batch005Guides,
+  ...matrixGuides001,
+  ...matrixGuides002,
+  ...matrixGuides003,
+  ...matrixGuides004,
+  ...matrixGuides005,
+  ...matrixGuides006,
 ];
 
 export function getGuide(
