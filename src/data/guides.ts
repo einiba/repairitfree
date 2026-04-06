@@ -18,6 +18,10 @@ import { matrixGuides003 } from "./guides-matrix-003";
 import { matrixGuides004 } from "./guides-matrix-004";
 import { matrixGuides005 } from "./guides-matrix-005";
 import { matrixGuides006 } from "./guides-matrix-006";
+import { matrixElectronicsGuides001 } from "./guides-matrix-electronics-001";
+import { matrixElectronicsGuides002 } from "./guides-matrix-electronics-002";
+import { matrixElectronicsGuides003 } from "./guides-matrix-electronics-003";
+import { matrixElectronicsGuides004 } from "./guides-matrix-electronics-004";
 
 const coreGuides: Guide[] = [
   {
@@ -439,6 +443,10 @@ export const guides: Guide[] = [
   ...matrixGuides004,
   ...matrixGuides005,
   ...matrixGuides006,
+  ...matrixElectronicsGuides001,
+  ...matrixElectronicsGuides002,
+  ...matrixElectronicsGuides003,
+  ...matrixElectronicsGuides004,
 ];
 
 export function getGuide(
