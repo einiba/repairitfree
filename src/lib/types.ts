@@ -52,11 +52,6 @@ export interface ErrorCode {
   guideId?: string;
 }
 
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
 export interface DiagnosticAnswer {
   step: number;
   question: string;

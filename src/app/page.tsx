@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-primary text-white py-16 px-4">
+      <section id="search" className="bg-primary text-white py-16 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">
             Fix it yourself. For free.
