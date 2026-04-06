@@ -1,6 +1,12 @@
 import { Guide } from "@/lib/types";
 import { applianceGuides } from "./guides-appliances";
 import { electronicsGuides } from "./guides-electronics";
+import { phoneGuides } from "./guides-phones";
+import { symptomGuides } from "./guides-symptoms";
+import { miscGuides } from "./guides-misc";
+import { errorCodeGuides } from "./guides-error-codes";
+import { hvacGuides } from "./guides-hvac";
+import { smartDeviceGuides } from "./guides-smartdevices";
 
 const coreGuides: Guide[] = [
   {
@@ -401,7 +407,17 @@ const coreGuides: Guide[] = [
   },
 ];
 
-export const guides: Guide[] = [...coreGuides, ...applianceGuides, ...electronicsGuides];
+export const guides: Guide[] = [
+  ...coreGuides,
+  ...applianceGuides,
+  ...electronicsGuides,
+  ...phoneGuides,
+  ...symptomGuides,
+  ...miscGuides,
+  ...errorCodeGuides,
+  ...hvacGuides,
+  ...smartDeviceGuides,
+];
 
 export function getGuide(
   categorySlug: string,
