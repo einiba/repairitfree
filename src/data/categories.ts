@@ -1,0 +1,81 @@
+import { DeviceCategory } from "@/lib/types";
+
+export const categories: DeviceCategory[] = [
+  {
+    id: "washing-machines",
+    name: "Washing Machines",
+    slug: "washing-machines",
+    icon: "🫧",
+    description: "Fix error codes, drainage issues, spinning problems, and more",
+  },
+  {
+    id: "dryers",
+    name: "Dryers",
+    slug: "dryers",
+    icon: "🌀",
+    description: "Not heating, squeaking, won't start, and other dryer repairs",
+  },
+  {
+    id: "dishwashers",
+    name: "Dishwashers",
+    slug: "dishwashers",
+    icon: "🍽️",
+    description: "Error codes, not cleaning, leaking, and drainage fixes",
+  },
+  {
+    id: "refrigerators",
+    name: "Refrigerators",
+    slug: "refrigerators",
+    icon: "❄️",
+    description: "Not cooling, ice maker issues, noisy compressor repairs",
+  },
+  {
+    id: "iphones",
+    name: "iPhones",
+    slug: "iphones",
+    icon: "📱",
+    description: "Screen replacement, battery swap, charging port fixes",
+  },
+  {
+    id: "android-phones",
+    name: "Android Phones",
+    slug: "android-phones",
+    icon: "📲",
+    description: "Boot loops, screen repair, charging issues and more",
+  },
+  {
+    id: "laptops",
+    name: "Laptops",
+    slug: "laptops",
+    icon: "💻",
+    description: "Won't turn on, overheating, beep codes, keyboard fixes",
+  },
+  {
+    id: "game-consoles",
+    name: "Game Consoles",
+    slug: "game-consoles",
+    icon: "🎮",
+    description: "PS4, PS5, Xbox, Switch — common failures and fixes",
+  },
+  {
+    id: "printers",
+    name: "Printers",
+    slug: "printers",
+    icon: "🖨️",
+    description: "Paper jams, offline issues, streaking, and cartridge help",
+  },
+  {
+    id: "microwaves",
+    name: "Microwaves",
+    slug: "microwaves",
+    icon: "📡",
+    description: "Not heating, sparking, turntable issues, and door fixes",
+  },
+  {
+    id: "ovens",
+    name: "Ovens & Ranges",
+    slug: "ovens",
+    icon: "🔥",
+    description: "Not heating, error codes, igniter problems, and temperature issues",
+  },
+];
