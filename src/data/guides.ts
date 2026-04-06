@@ -8,6 +8,7 @@ import { errorCodeGuides } from "./guides-error-codes";
 import { hvacGuides } from "./guides-hvac";
 import { smartDeviceGuides } from "./guides-smartdevices";
 import { batch001Guides } from "./guides-batch-001";
+import { batch002Guides } from "./guides-batch-002";
 
 const coreGuides: Guide[] = [
   {
@@ -419,6 +420,7 @@ export const guides: Guide[] = [
   ...hvacGuides,
   ...smartDeviceGuides,
   ...batch001Guides,
+  ...batch002Guides,
 ];
 
 export function getGuide(
