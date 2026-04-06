@@ -10,6 +10,8 @@ import { smartDeviceGuides } from "./guides-smartdevices";
 import { batch001Guides } from "./guides-batch-001";
 import { batch002Guides } from "./guides-batch-002";
 import { batch003Guides } from "./guides-batch-003";
+import { batch004Guides } from "./guides-batch-004";
+import { batch005Guides } from "./guides-batch-005";
 
 const coreGuides: Guide[] = [
   {
@@ -423,6 +425,8 @@ export const guides: Guide[] = [
   ...batch001Guides,
   ...batch002Guides,
   ...batch003Guides,
+  ...batch004Guides,
+  ...batch005Guides,
 ];
 
 export function getGuide(
