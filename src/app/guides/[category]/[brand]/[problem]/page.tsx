@@ -200,7 +200,7 @@ export default async function GuidePage({
                     rel="noopener noreferrer sponsored"
                     className="px-3 py-1.5 bg-yellow-400 text-yellow-900 rounded text-xs font-medium hover:bg-yellow-500"
                   >
-                    Amazon
+                    Amazon <span className="font-normal opacity-75">(affiliate link)</span>
                   </a>
                 )}
                 {part.ebayUrl && (
@@ -210,7 +210,7 @@ export default async function GuidePage({
                     rel="noopener noreferrer sponsored"
                     className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200"
                   >
-                    eBay
+                    eBay <span className="font-normal opacity-75">(affiliate link)</span>
                   </a>
                 )}
                 {part.ifixitUrl && (
@@ -220,7 +220,7 @@ export default async function GuidePage({
                     rel="noopener noreferrer sponsored"
                     className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200"
                   >
-                    iFixit
+                    iFixit <span className="font-normal opacity-75">(affiliate link)</span>
                   </a>
                 )}
               </div>

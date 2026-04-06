@@ -1,0 +1,40 @@
+name: Generate Repair Guides
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generate guide batch
+        run: node scripts/generate-guides.js
+
+      - name: Check for changes
+        id: check
+        run: |
+          git diff --quiet && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: auto-generate repair guide batch $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
