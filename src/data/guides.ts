@@ -23,6 +23,7 @@ import { matrixElectronicsGuides002 } from "./guides-matrix-electronics-002";
 import { matrixElectronicsGuides003 } from "./guides-matrix-electronics-003";
 import { matrixElectronicsGuides004 } from "./guides-matrix-electronics-004";
 import { batch006Guides } from "./guides-batch-006";
+import { batch007Guides } from "./guides-batch-007";
 
 const coreGuides: Guide[] = [
   {
@@ -439,6 +440,7 @@ export const guides: Guide[] = [
   ...batch004Guides,
   ...batch005Guides,
   ...batch006Guides,
+  ...batch007Guides,
   ...matrixGuides001,
   ...matrixGuides002,
   ...matrixGuides003,
