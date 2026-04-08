@@ -41,6 +41,7 @@ export interface RepairStep {
   number: number;
   title: string;
   description: string;
+  imageUrl?: string;
 }
 
 export interface ErrorCode {

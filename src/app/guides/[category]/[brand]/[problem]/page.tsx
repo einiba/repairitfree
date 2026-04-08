@@ -326,6 +326,7 @@ export default async function GuidePage({
                   <StepImagePlaceholder
                     stepNumber={step.number}
                     description={step.title}
+                    imageUrl={step.imageUrl}
                   />
                 </div>
               </div>

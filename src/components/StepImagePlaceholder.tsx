@@ -1,10 +1,28 @@
+import Image from "next/image";
+
 export default function StepImagePlaceholder({
   stepNumber,
   description,
+  imageUrl,
 }: {
   stepNumber: number;
   description: string;
+  imageUrl?: string | null;
 }) {
+  if (imageUrl) {
+    return (
+      <div className="mt-3 relative aspect-video w-full overflow-hidden rounded-lg border border-border">
+        <Image
+          src={imageUrl}
+          alt={description}
+          fill
+          sizes="(max-width: 768px) 100vw, 720px"
+          className="object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="mt-3 bg-surface border border-dashed border-border rounded-lg p-4 flex items-center gap-3 text-sm text-muted"

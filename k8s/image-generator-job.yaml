@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: image-generator
+  namespace: umami
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: generator
+        image: repairitfree-image-gen:latest
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: repairitfree-secrets
+              key: DATABASE_URL
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: repairitfree-secrets
+              key: ANTHROPIC_API_KEY
+        - name: DO_SPACES_KEY
+          valueFrom:
+            secretKeyRef:
+              name: repairitfree-secrets
+              key: DO_SPACES_KEY
+        - name: DO_SPACES_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: repairitfree-secrets
+              key: DO_SPACES_SECRET
