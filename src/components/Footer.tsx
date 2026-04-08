@@ -37,6 +37,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/repair-vs-replace" className="hover:text-primary">
+                  Repair vs Replace Guide
+                </Link>
+              </li>
+              <li>
                 <Link href="/about" className="hover:text-primary">
                   About Us
                 </Link>

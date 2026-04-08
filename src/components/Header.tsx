@@ -36,6 +36,12 @@ export default function Header() {
             Guides
           </Link>
           <Link
+            href="/repair-vs-replace"
+            className="text-muted hover:text-primary font-medium"
+          >
+            Repair vs Replace
+          </Link>
+          <Link
             href="/about"
             className="text-muted hover:text-primary font-medium"
           >
@@ -87,6 +93,15 @@ export default function Header() {
                 className="block py-3 px-3 text-base font-medium text-foreground hover:bg-surface rounded-lg transition-colors"
               >
                 Guides
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/repair-vs-replace"
+                onClick={() => setMenuOpen(false)}
+                className="block py-3 px-3 text-base font-medium text-foreground hover:bg-surface rounded-lg transition-colors"
+              >
+                Repair vs Replace
               </Link>
             </li>
             <li>
