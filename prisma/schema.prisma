@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model Category {
+  id          String   @id
+  name        String
+  slug        String   @unique
+  icon        String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("categories")
+}
+
+model Guide {
+  id              String   @id
+  category        String
+  categorySlug    String   @map("category_slug")
+  brand           String
+  brandSlug       String   @map("brand_slug")
+  problemSlug     String   @map("problem_slug")
+  problemTitle    String   @map("problem_title")
+  difficulty      String
+  timeEstimate    String   @map("time_estimate")
+  costEstimate    String   @map("cost_estimate")
+  toolsNeeded     String[] @map("tools_needed")
+  safetyWarnings  String[] @map("safety_warnings")
+  quickDiagnosis  String   @map("quick_diagnosis")
+  alternativeCauses String[] @map("alternative_causes")
+  whenToCallPro   String   @map("when_to_call_pro")
+  metaTitle       String   @map("meta_title")
+  metaDescription String   @map("meta_description")
+  youtubeId       String?  @map("youtube_id")
+  pageViews       Int      @default(0) @map("page_views")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @map("updated_at")
+
+  parts           Part[]
+  steps           Step[]
+  errorCodes      ErrorCode[]
+
+  @@unique([categorySlug, brandSlug, problemSlug])
+  @@index([categorySlug])
+  @@index([categorySlug, brandSlug])
+  @@map("guides")
+}
+
+model Part {
+  id        Int     @id @default(autoincrement())
+  guideId   String  @map("guide_id")
+  name      String
+  costRange String  @map("cost_range")
+  amazonUrl String? @map("amazon_url")
+  ebayUrl   String? @map("ebay_url")
+  ifixitUrl String? @map("ifixit_url")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  guide     Guide   @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId])
+  @@map("parts")
+}
+
+model Step {
+  id          Int     @id @default(autoincrement())
+  guideId     String  @map("guide_id")
+  stepNumber  Int     @map("step_number")
+  title       String
+  description String
+  imageUrl    String? @map("image_url")
+  imagePrompt String? @map("image_prompt")
+
+  guide       Guide   @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, stepNumber])
+  @@index([guideId, stepNumber])
+  @@map("steps")
+}
+
+model ErrorCode {
+  id            String   @id
+  deviceType    String   @map("device_type")
+  deviceTypeSlug String  @map("device_type_slug")
+  code          String
+  codeSlug      String   @map("code_slug")
+  meaning       String
+  guideId       String?  @map("guide_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  guide         Guide?   @relation(fields: [guideId], references: [id], onDelete: SetNull)
+
+  @@unique([deviceTypeSlug, codeSlug])
+  @@index([deviceTypeSlug])
+  @@map("error_codes")
+}
+
+model SearchLog {
+  id        BigInt   @id @default(autoincrement())
+  type      String
+  query     String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([query])
+  @@map("search_logs")
+}
