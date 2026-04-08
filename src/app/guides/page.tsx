@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { categories } from "@/data/categories";
-import { guides } from "@/data/guides";
+import { getCategories, getCategoryGuideCounts, getAllGuideCount } from "@/lib/queries";
 import type { Metadata } from "next";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "All Repair Guides | RepairItFree",
@@ -9,12 +10,12 @@ export const metadata: Metadata = {
     "Browse 900+ free repair guides by category. Step-by-step instructions for electronics, appliances, and more.",
 };
 
-export default function GuidesPage() {
-  // Pre-compute guide counts per category slug
-  const countBySlug: Record<string, number> = {};
-  for (const g of guides) {
-    countBySlug[g.categorySlug] = (countBySlug[g.categorySlug] || 0) + 1;
-  }
+export default async function GuidesPage() {
+  const [categories, countBySlug, totalGuides] = await Promise.all([
+    getCategories(),
+    getCategoryGuideCounts(),
+    getAllGuideCount(),
+  ]);
 
   return (
     <div>
@@ -25,7 +26,7 @@ export default function GuidesPage() {
             All Repair Guides
           </h1>
           <p className="text-blue-100 text-lg max-w-xl mx-auto">
-            Browse {guides.length}+ free repair guides by category
+            Browse {totalGuides}+ free repair guides by category
           </p>
         </div>
       </section>

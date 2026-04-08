@@ -1,10 +1,16 @@
 import type { MetadataRoute } from "next";
-import { guides, getBrandsForCategory } from "@/data/guides";
-import { errorCodes } from "@/data/error-codes";
-import { categories } from "@/data/categories";
+import { getAllGuideSlugs, getCategories, getBrandsForCategory, getDeviceTypes, getErrorCodesByDevice } from "@/lib/queries";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 86400;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://repairitfree.com";
+
+  const [categories, guideSlugs, deviceTypes] = await Promise.all([
+    getCategories(),
+    getAllGuideSlugs(),
+    getDeviceTypes(),
+  ]);
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
@@ -25,7 +31,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Brand pages: /guides/washing-machines/whirlpool
   const brandPages: MetadataRoute.Sitemap = [];
   for (const cat of categories) {
-    const brands = getBrandsForCategory(cat.slug);
+    const brands = await getBrandsForCategory(cat.slug);
     for (const brand of brands) {
       brandPages.push({
         url: `${baseUrl}/guides/${cat.slug}/${brand.slug}`,
@@ -37,7 +43,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
 
   // Individual guide pages: /guides/washing-machines/whirlpool/f21-error-code
-  const guidePages: MetadataRoute.Sitemap = guides.map((guide) => ({
+  const guidePages: MetadataRoute.Sitemap = guideSlugs.map((guide) => ({
     url: `${baseUrl}/guides/${guide.categorySlug}/${guide.brandSlug}/${guide.problemSlug}`,
     lastModified: new Date(),
     changeFrequency: "monthly" as const,
@@ -45,17 +51,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Error code device type pages: /error-codes/dishwasher
-  const errorCodeDevicePages: MetadataRoute.Sitemap = [
-    ...new Set(errorCodes.map((e) => e.deviceTypeSlug)),
-  ].map((slug) => ({
-    url: `${baseUrl}/error-codes/${slug}`,
+  const errorCodeDevicePages: MetadataRoute.Sitemap = deviceTypes.map((dt) => ({
+    url: `${baseUrl}/error-codes/${dt.deviceTypeSlug}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.7,
   }));
 
   // Individual error code pages: /error-codes/dishwasher/e24
-  const errorCodePages: MetadataRoute.Sitemap = errorCodes.map((code) => ({
+  const allErrorCodes = (await Promise.all(
+    deviceTypes.map((dt) => getErrorCodesByDevice(dt.deviceTypeSlug))
+  )).flat();
+  const errorCodePages: MetadataRoute.Sitemap = allErrorCodes.map((code) => ({
     url: `${baseUrl}/error-codes/${code.deviceTypeSlug}/${code.codeSlug}`,
     lastModified: new Date(),
     changeFrequency: "monthly" as const,

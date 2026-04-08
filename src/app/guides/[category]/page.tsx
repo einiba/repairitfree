@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/Breadcrumb";
-import { categories } from "@/data/categories";
-import { getGuidesByCategory, getBrandsForCategory } from "@/data/guides";
+import { getCategories, getGuidesByCategory, getBrandsForCategory } from "@/lib/queries";
+
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -11,6 +12,7 @@ export async function generateMetadata({
   params: Promise<{ category: string }>;
 }): Promise<Metadata> {
   const { category: slug } = await params;
+  const categories = await getCategories();
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) return {};
   return {
@@ -25,11 +27,12 @@ export default async function CategoryPage({
   params: Promise<{ category: string }>;
 }) {
   const { category: slug } = await params;
+  const categories = await getCategories();
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) notFound();
 
-  const brands = getBrandsForCategory(slug);
-  const allGuides = getGuidesByCategory(slug);
+  const brands = await getBrandsForCategory(slug);
+  const allGuides = await getGuidesByCategory(slug);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

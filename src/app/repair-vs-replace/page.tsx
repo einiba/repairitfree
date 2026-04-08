@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
-import { guides } from "@/data/guides";
+import { getGuidesByCategory } from "@/lib/queries";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title:
@@ -62,17 +64,13 @@ const applianceLifespans = [
   },
 ];
 
-function getTopGuides(categorySlug: string, count: number) {
-  return guides
-    .filter((g) => g.categorySlug === categorySlug)
-    .slice(0, count);
-}
-
-export default function RepairVsReplacePage() {
-  const applianceSections = applianceLifespans.map((appliance) => ({
-    ...appliance,
-    guides: getTopGuides(appliance.categorySlug, 5),
-  }));
+export default async function RepairVsReplacePage() {
+  const applianceSections = await Promise.all(
+    applianceLifespans.map(async (appliance) => ({
+      ...appliance,
+      guides: (await getGuidesByCategory(appliance.categorySlug)).slice(0, 5),
+    }))
+  );
 
   return (
     <div>

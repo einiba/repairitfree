@@ -14,9 +14,11 @@ import {
   getGuidesSameBrandCategory,
   getGuidesSameProblem,
   getGuidesPopularCategory,
-} from "@/data/guides";
+} from "@/lib/queries";
 import { videoMappings } from "@/data/video-mappings";
 import RelatedGuides from "@/components/RelatedGuides";
+
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -24,7 +26,7 @@ export async function generateMetadata({
   params: Promise<{ category: string; brand: string; problem: string }>;
 }): Promise<Metadata> {
   const { category, brand, problem } = await params;
-  const guide = getGuide(category, brand, problem);
+  const guide = await getGuide(category, brand, problem);
   if (!guide) return {};
   return {
     title: { absolute: guide.metaTitle },
@@ -46,7 +48,7 @@ function parseCostValue(costEstimate: string): string {
   return match ? match[0] : "0";
 }
 
-function HowToSchema({ guide }: { guide: NonNullable<ReturnType<typeof getGuide>> }) {
+function HowToSchema({ guide }: { guide: NonNullable<Awaited<ReturnType<typeof getGuide>>> }) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "HowTo",
@@ -77,7 +79,7 @@ function HowToSchema({ guide }: { guide: NonNullable<ReturnType<typeof getGuide>
   );
 }
 
-function FAQSchema({ guide }: { guide: NonNullable<ReturnType<typeof getGuide>> }) {
+function FAQSchema({ guide }: { guide: NonNullable<Awaited<ReturnType<typeof getGuide>>> }) {
   const mainEntity: Array<{ "@type": string; name: string; acceptedAnswer: { "@type": string; text: string } }> = [];
 
   if (guide.alternativeCauses.length > 0) {
@@ -123,16 +125,16 @@ export default async function GuidePage({
   params: Promise<{ category: string; brand: string; problem: string }>;
 }) {
   const { category, brand, problem } = await params;
-  const guide = getGuide(category, brand, problem);
+  const guide = await getGuide(category, brand, problem);
 
   if (!guide) notFound();
 
   const videoId = guide.youtubeId || videoMappings[guide.id];
 
-  const sameBrand = getGuidesSameBrandCategory(category, brand, guide.id).slice(0, 4);
-  const sameProblem = getGuidesSameProblem(guide.problemSlug, brand, guide.id).slice(0, 4);
+  const sameBrand = (await getGuidesSameBrandCategory(category, brand, guide.id)).slice(0, 4);
+  const sameProblem = (await getGuidesSameProblem(guide.problemSlug, brand, guide.id)).slice(0, 4);
   const shownIds = new Set([guide.id, ...sameBrand.map((g) => g.id), ...sameProblem.map((g) => g.id)]);
-  const popularCategory = getGuidesPopularCategory(category, shownIds).slice(0, 4);
+  const popularCategory = (await getGuidesPopularCategory(category, shownIds)).slice(0, 4);
 
   // Inline "You might also like" picks: up to 3 from combined related guides
   const inlineLinks = [...sameBrand, ...sameProblem, ...popularCategory].slice(0, 3);
