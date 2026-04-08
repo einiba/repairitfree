@@ -107,7 +107,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/diagnose"
-            className="inline-block px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark"
+            className="inline-block px-6 py-3.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark min-h-[44px] text-base"
           >
             Try the AI Diagnostic Tool
           </Link>

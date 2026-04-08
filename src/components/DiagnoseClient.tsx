@@ -195,7 +195,7 @@ export default function DiagnoseClient() {
       {step > 1 && (
         <button
           onClick={goBack}
-          className="mb-6 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground transition-colors"
+          className="mb-6 inline-flex items-center gap-1 text-sm text-muted hover:text-foreground transition-colors min-h-[44px] py-2"
         >
           <svg
             className="w-4 h-4"
@@ -228,7 +228,7 @@ export default function DiagnoseClient() {
                   setSelectedCategory(cat);
                   setStep(2);
                 }}
-                className="p-4 border border-border rounded-xl text-sm font-medium hover:border-primary hover:bg-primary-light transition-all text-left"
+                className="p-4 border border-border rounded-xl text-sm sm:text-base font-medium hover:border-primary hover:bg-primary-light transition-all text-left min-h-[44px]"
               >
                 {cat.name}
               </button>
@@ -255,7 +255,7 @@ export default function DiagnoseClient() {
                     setSelectedBrand(brand);
                     setStep(3);
                   }}
-                  className="p-4 border border-border rounded-xl text-sm font-medium hover:border-primary hover:bg-primary-light transition-all text-left"
+                  className="p-4 border border-border rounded-xl text-sm sm:text-base font-medium hover:border-primary hover:bg-primary-light transition-all text-left min-h-[44px]"
                 >
                   {brand.name}
                 </button>
@@ -297,7 +297,7 @@ export default function DiagnoseClient() {
                     setSelectedProblem(problem);
                     setStep(4);
                   }}
-                  className="p-4 border border-border rounded-xl text-sm font-medium hover:border-primary hover:bg-primary-light transition-all text-left"
+                  className="p-4 border border-border rounded-xl text-sm sm:text-base font-medium hover:border-primary hover:bg-primary-light transition-all text-left min-h-[44px]"
                 >
                   {problem.title}
                 </button>
@@ -425,16 +425,16 @@ export default function DiagnoseClient() {
             )}
 
             {/* Start over */}
-            <div className="mt-8 flex gap-3">
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <button
                 onClick={reset}
-                className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:bg-surface transition-colors"
+                className="px-4 py-3 border border-border rounded-lg text-sm text-muted hover:bg-surface transition-colors min-h-[44px]"
               >
                 Diagnose another problem
               </button>
               <Link
                 href="/guides"
-                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+                className="px-4 py-3 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors min-h-[44px] text-center"
               >
                 Browse all guides
               </Link>

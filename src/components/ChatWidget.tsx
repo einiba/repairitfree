@@ -78,9 +78,9 @@ export default function ChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-4 z-50 max-sm:left-4">
       {isOpen ? (
-        <div className="w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-border flex flex-col max-h-[32rem]">
+        <div className="w-full sm:w-96 bg-white rounded-xl shadow-2xl border border-border flex flex-col max-h-[80vh] sm:max-h-[32rem]">
           {/* Header */}
           <div className="bg-primary text-white px-4 py-3 rounded-t-xl flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
@@ -187,12 +187,12 @@ export default function ChatWidget() {
                     : "Describe your problem..."
                 }
                 disabled={limitReached || isLoading}
-                className="flex-1 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:bg-surface disabled:text-muted"
+                className="flex-1 border border-border rounded-lg px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:bg-surface disabled:text-muted"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading || limitReached}
-                className="bg-primary text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-primary text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px]"
               >
                 Send
               </button>
