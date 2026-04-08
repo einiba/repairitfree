@@ -38,14 +38,15 @@ const s3 = new S3Client({
 // ── Helpers ─────────────────────────────────────────────────────────
 
 async function generateImage(prompt: string): Promise<Buffer> {
-  const response = await fetch("https://api.replicate.com/v1/predictions", {
+  // Use Replicate's official model endpoint
+  const response = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${REPLICATE_API_TOKEN}`,
       "Content-Type": "application/json",
+      "Prefer": "wait",
     },
     body: JSON.stringify({
-      version: "black-forest-labs/flux-schnell",
       input: {
         prompt: prompt,
         num_outputs: 1,
@@ -56,24 +57,38 @@ async function generateImage(prompt: string): Promise<Buffer> {
     }),
   });
 
-  const prediction = await response.json();
-
-  // Poll for completion
-  let result = prediction;
-  while (result.status !== "succeeded" && result.status !== "failed") {
-    await new Promise((r) => setTimeout(r, 1000));
-    const pollResponse = await fetch(result.urls.get, {
-      headers: { "Authorization": `Bearer ${REPLICATE_API_TOKEN}` },
-    });
-    result = await pollResponse.json();
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Replicate API ${response.status}: ${errText}`);
   }
+
+  const result = await response.json();
 
   if (result.status === "failed") {
     throw new Error(`Replicate failed: ${result.error}`);
   }
 
+  // If not yet complete (Prefer: wait should handle this, but just in case)
+  if (result.status !== "succeeded" && result.urls?.get) {
+    let polled = result;
+    for (let i = 0; i < 60; i++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      const pollResponse = await fetch(polled.urls.get, {
+        headers: { "Authorization": `Bearer ${REPLICATE_API_TOKEN}` },
+      });
+      polled = await pollResponse.json();
+      if (polled.status === "succeeded" || polled.status === "failed") {
+        if (polled.status === "failed") throw new Error(`Replicate failed: ${polled.error}`);
+        const imageUrl = polled.output[0];
+        const imageResponse = await fetch(imageUrl);
+        return Buffer.from(await imageResponse.arrayBuffer());
+      }
+    }
+    throw new Error("Replicate prediction timed out");
+  }
+
   // Download the image
-  const imageUrl = result.output[0];
+  const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
   const imageResponse = await fetch(imageUrl);
   return Buffer.from(await imageResponse.arrayBuffer());
 }
