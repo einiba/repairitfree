@@ -31,6 +31,7 @@ import { batch011Guides } from "./guides-batch-011";
 import { batch012Guides } from "./guides-batch-012";
 import { redditGapGuides } from "./guides-reddit-gaps";
 import { redditLiveGuides } from "./guides-reddit-live";
+import { batch013Guides } from "./guides-batch-013";
 
 const coreGuides: Guide[] = [
   {
@@ -465,6 +466,7 @@ export const guides: Guide[] = [
   ...matrixElectronicsGuides004,
   ...redditGapGuides,
   ...redditLiveGuides,
+  ...batch013Guides,
 ];
 
 export function getGuide(
