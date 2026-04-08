@@ -499,3 +499,46 @@ export function getBrandsForCategory(
     name,
   }));
 }
+
+/** Same brand + same category, excluding the current guide */
+export function getGuidesSameBrandCategory(
+  categorySlug: string,
+  brandSlug: string,
+  excludeId: string
+): Guide[] {
+  return guides.filter(
+    (g) =>
+      g.categorySlug === categorySlug &&
+      g.brandSlug === brandSlug &&
+      g.id !== excludeId
+  );
+}
+
+/** Same problem slug, different brands */
+export function getGuidesSameProblem(
+  problemSlug: string,
+  excludeBrandSlug: string,
+  excludeId: string
+): Guide[] {
+  return guides.filter(
+    (g) =>
+      g.problemSlug === problemSlug &&
+      g.brandSlug !== excludeBrandSlug &&
+      g.id !== excludeId
+  );
+}
+
+/** Same category, excluding already-shown IDs, deterministic shuffle by id */
+export function getGuidesPopularCategory(
+  categorySlug: string,
+  excludeIds: Set<string>
+): Guide[] {
+  return guides
+    .filter((g) => g.categorySlug === categorySlug && !excludeIds.has(g.id))
+    .sort((a, b) => {
+      // deterministic pseudo-shuffle based on id char codes
+      const hashA = a.id.split("").reduce((s, c) => s + c.charCodeAt(0), 0);
+      const hashB = b.id.split("").reduce((s, c) => s + c.charCodeAt(0), 0);
+      return hashA - hashB;
+    });
+}

@@ -2,7 +2,21 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/Breadcrumb";
-import { getGuide, getGuidesByCategory } from "@/data/guides";
+import DifficultyMeter from "@/components/DifficultyMeter";
+import RepairChecklist from "@/components/RepairChecklist";
+import StepImagePlaceholder from "@/components/StepImagePlaceholder";
+import StepProgress from "@/components/StepProgress";
+import ToolIcon from "@/components/ToolIcon";
+import VideoEmbed from "@/components/VideoEmbed";
+import VideoPlaceholder from "@/components/VideoPlaceholder";
+import {
+  getGuide,
+  getGuidesSameBrandCategory,
+  getGuidesSameProblem,
+  getGuidesPopularCategory,
+} from "@/data/guides";
+import { videoMappings } from "@/data/video-mappings";
+import RelatedGuides from "@/components/RelatedGuides";
 
 export async function generateMetadata({
   params,
@@ -113,9 +127,15 @@ export default async function GuidePage({
 
   if (!guide) notFound();
 
-  const relatedGuides = getGuidesByCategory(category).filter(
-    (g) => g.id !== guide.id
-  );
+  const videoId = guide.youtubeId || videoMappings[guide.id];
+
+  const sameBrand = getGuidesSameBrandCategory(category, brand, guide.id).slice(0, 4);
+  const sameProblem = getGuidesSameProblem(guide.problemSlug, brand, guide.id).slice(0, 4);
+  const shownIds = new Set([guide.id, ...sameBrand.map((g) => g.id), ...sameProblem.map((g) => g.id)]);
+  const popularCategory = getGuidesPopularCategory(category, shownIds).slice(0, 4);
+
+  // Inline "You might also like" picks: up to 3 from combined related guides
+  const inlineLinks = [...sameBrand, ...sameProblem, ...popularCategory].slice(0, 3);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -136,9 +156,9 @@ export default async function GuidePage({
       </h1>
 
       {/* Quick diagnosis box */}
-      <div className="bg-primary-light border border-blue-200 rounded-xl p-5 mb-8">
-        <p className="text-sm mb-4">{guide.quickDiagnosis}</p>
-        <div className="flex flex-wrap gap-4 text-sm">
+      <div className="bg-primary-light border border-blue-200 rounded-xl p-4 sm:p-5 mb-8">
+        <p className="text-sm sm:text-base mb-4">{guide.quickDiagnosis}</p>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-4 text-sm">
           <span className="flex items-center gap-1">
             ⚡ Difficulty:{" "}
             <strong
@@ -157,13 +177,26 @@ export default async function GuidePage({
             ⏱ <strong>{guide.timeEstimate}</strong>
           </span>
           <span className="flex items-center gap-1">
-            💰 Parts cost: <strong>{guide.costEstimate}</strong>
+            💰 Parts: <strong>{guide.costEstimate}</strong>
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 col-span-2">
             🔧 Tools: {guide.toolsNeeded.join(", ")}
           </span>
         </div>
       </div>
+
+      {/* Watch the video */}
+      <section className="mb-8">
+        <h2 className="text-lg font-bold mb-3">Watch the Video</h2>
+        {videoId ? (
+          <VideoEmbed
+            videoId={videoId}
+            title={`${guide.brand} ${guide.category} ${guide.problemTitle} — Repair Guide`}
+          />
+        ) : (
+          <VideoPlaceholder />
+        )}
+      </section>
 
       {/* Safety warnings */}
       {guide.safetyWarnings.length > 0 && (
@@ -250,6 +283,25 @@ export default async function GuidePage({
         </ol>
       </section>
 
+      {/* You might also like — inline text links */}
+      {inlineLinks.length > 0 && (
+        <div className="mb-8 p-4 bg-primary-light border border-blue-100 rounded-lg">
+          <p className="text-sm font-medium mb-2">You might also like:</p>
+          <ul className="flex flex-wrap gap-x-4 gap-y-1">
+            {inlineLinks.map((g) => (
+              <li key={g.id}>
+                <Link
+                  href={`/guides/${g.categorySlug}/${g.brandSlug}/${g.problemSlug}`}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {g.brand} {g.category} {g.problemTitle}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* If that didn't work */}
       <section className="mb-8">
         <h2 className="text-lg font-bold mb-3">If That Didn&apos;t Work</h2>
@@ -266,28 +318,15 @@ export default async function GuidePage({
         <p className="text-sm text-muted">{guide.whenToCallPro}</p>
       </section>
 
-      {/* Related guides */}
-      {relatedGuides.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-bold mb-3">Related Repairs</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {relatedGuides.slice(0, 4).map((g) => (
-              <Link
-                key={g.id}
-                href={`/guides/${g.categorySlug}/${g.brandSlug}/${g.problemSlug}`}
-                className="p-3 border border-border rounded-lg hover:border-primary text-sm"
-              >
-                <p className="font-medium">
-                  {g.brand} — {g.problemTitle}
-                </p>
-                <p className="text-xs text-muted mt-1">
-                  {g.difficulty} · {g.timeEstimate} · {g.costEstimate}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Related guides — 3 sections with up to 12 total links */}
+      <RelatedGuides
+        sameBrand={sameBrand}
+        sameProblem={sameProblem}
+        popularCategory={popularCategory}
+        brandName={guide.brand}
+        categoryName={guide.category}
+        problemTitle={guide.problemTitle}
+      />
 
       {/* Disclaimer */}
       <div className="p-4 bg-surface border border-border rounded-lg text-xs text-muted space-y-2">

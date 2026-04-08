@@ -26,6 +26,7 @@ export interface Guide {
   whenToCallPro: string;
   metaTitle: string;
   metaDescription: string;
+  youtubeId?: string;
 }
 
 export interface Part {
