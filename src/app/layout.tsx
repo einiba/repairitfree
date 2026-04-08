@@ -56,7 +56,7 @@ export default function RootLayout({
         <SpeedInsights />
         <Script
           src="https://analytics.repairitfree.com/script.js"
-          data-website-id="REPLACE_WITH_UMAMI_WEBSITE_ID"
+          data-website-id="a23f76fa-6e88-473a-aa4b-5f3512de3c56"
           strategy="afterInteractive"
         />
       </body>
