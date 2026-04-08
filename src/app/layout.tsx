@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -53,6 +54,11 @@ export default function RootLayout({
         <ChatWidget />
         <Analytics />
         <SpeedInsights />
+        <Script
+          src="https://analytics.repairitfree.com/script.js"
+          data-website-id="REPLACE_WITH_UMAMI_WEBSITE_ID"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
