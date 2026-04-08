@@ -2,18 +2,17 @@
  * Automated Guide Generation Script
  *
  * Reads guide-topics.json, picks the next 20 topics that don't already have
- * guide files, generates guide data using template strings, writes a new
- * batch file, and updates guides.ts imports.
+ * guides in Postgres, generates guide data using template strings, and
+ * INSERTs directly into the database via Prisma.
  *
- * Usage: node scripts/generate-guides.js
+ * Usage: DATABASE_URL=... node scripts/generate-guides.js
  */
 
 const fs = require("fs");
 const path = require("path");
+const { PrismaClient } = require("@prisma/client");
 
-const DATA_DIR = path.join(__dirname, "..", "src", "data");
 const TOPICS_FILE = path.join(__dirname, "guide-topics.json");
-const GUIDES_INDEX = path.join(DATA_DIR, "guides.ts");
 const BATCH_SIZE = 20;
 
 // ---------------------------------------------------------------------------
@@ -855,33 +854,6 @@ function generateGuideId(topic) {
   return `${topic.brandSlug}-${catSingular}-${topic.problemSlug}`;
 }
 
-function getExistingGuideIds() {
-  const ids = new Set();
-  const files = fs.readdirSync(DATA_DIR);
-  for (const file of files) {
-    if (!file.endsWith(".ts")) continue;
-    const content = fs.readFileSync(path.join(DATA_DIR, file), "utf-8");
-    const matches = content.matchAll(/id:\s*"([^"]+)"/g);
-    for (const m of matches) {
-      ids.add(m[1]);
-    }
-  }
-  return ids;
-}
-
-function getNextBatchNumber() {
-  const files = fs.readdirSync(DATA_DIR);
-  let max = 1;
-  for (const file of files) {
-    const match = file.match(/guides-batch-(\d+)\.ts$/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      if (num > max) max = num;
-    }
-  }
-  return max + 1;
-}
-
 function generateGuide(topic) {
   const template = CATEGORY_TEMPLATES[topic.categorySlug] || CATEGORY_TEMPLATES["laptops"];
   const singular = template.singularName;
@@ -913,161 +885,136 @@ function generateGuide(topic) {
   };
 }
 
-function escapeForTS(str) {
-  return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+// ---------------------------------------------------------------------------
+// Database insertion
+// ---------------------------------------------------------------------------
+
+async function insertGuide(prisma, guide) {
+  await prisma.guide.create({
+    data: {
+      id: guide.id,
+      category: guide.category,
+      categorySlug: guide.categorySlug,
+      brand: guide.brand,
+      brandSlug: guide.brandSlug,
+      problemSlug: guide.problemSlug,
+      problemTitle: guide.problemTitle,
+      difficulty: guide.difficulty,
+      timeEstimate: guide.timeEstimate,
+      costEstimate: guide.costEstimate,
+      toolsNeeded: guide.toolsNeeded,
+      safetyWarnings: guide.safetyWarnings,
+      quickDiagnosis: guide.quickDiagnosis,
+      alternativeCauses: guide.alternativeCauses,
+      whenToCallPro: guide.whenToCallPro,
+      metaTitle: guide.metaTitle,
+      metaDescription: guide.metaDescription,
+      parts: {
+        create: guide.partsNeeded.map((part, idx) => ({
+          name: part.name,
+          costRange: part.costRange,
+          amazonUrl: part.amazonUrl || null,
+          ebayUrl: part.ebayUrl || null,
+          sortOrder: idx,
+        })),
+      },
+      steps: {
+        create: guide.steps.map((step) => ({
+          stepNumber: step.number,
+          title: step.title,
+          description: step.description,
+        })),
+      },
+    },
+  });
 }
 
-function guideToTS(guide, indent = "  ") {
-  const i = indent;
-  const i2 = indent + "  ";
-  const i3 = indent + "    ";
-
-  let ts = `${i}{\n`;
-  ts += `${i2}id: "${guide.id}",\n`;
-  ts += `${i2}category: "${escapeForTS(guide.category)}",\n`;
-  ts += `${i2}categorySlug: "${guide.categorySlug}",\n`;
-  ts += `${i2}brand: "${escapeForTS(guide.brand)}",\n`;
-  ts += `${i2}brandSlug: "${guide.brandSlug}",\n`;
-  ts += `${i2}problemSlug: "${guide.problemSlug}",\n`;
-  ts += `${i2}problemTitle: "${escapeForTS(guide.problemTitle)}",\n`;
-  ts += `${i2}difficulty: "${guide.difficulty}",\n`;
-  ts += `${i2}timeEstimate: "${guide.timeEstimate}",\n`;
-  ts += `${i2}costEstimate: "${guide.costEstimate}",\n`;
-
-  // toolsNeeded
-  ts += `${i2}toolsNeeded: [\n`;
-  for (const tool of guide.toolsNeeded) {
-    ts += `${i3}"${escapeForTS(tool)}",\n`;
-  }
-  ts += `${i2}],\n`;
-
-  // partsNeeded
-  ts += `${i2}partsNeeded: [\n`;
-  for (const part of guide.partsNeeded) {
-    ts += `${i3}{\n`;
-    ts += `${i3}  name: "${escapeForTS(part.name)}",\n`;
-    ts += `${i3}  costRange: "${part.costRange}",\n`;
-    if (part.amazonUrl) ts += `${i3}  amazonUrl: "${escapeForTS(part.amazonUrl)}",\n`;
-    if (part.ebayUrl) ts += `${i3}  ebayUrl: "${escapeForTS(part.ebayUrl)}",\n`;
-    ts += `${i3}},\n`;
-  }
-  ts += `${i2}],\n`;
-
-  // safetyWarnings
-  ts += `${i2}safetyWarnings: [\n`;
-  for (const w of guide.safetyWarnings) {
-    ts += `${i3}"${escapeForTS(w)}",\n`;
-  }
-  ts += `${i2}],\n`;
-
-  // quickDiagnosis
-  ts += `${i2}quickDiagnosis:\n`;
-  ts += `${i3}"${escapeForTS(guide.quickDiagnosis)}",\n`;
-
-  // steps
-  ts += `${i2}steps: [\n`;
-  for (const step of guide.steps) {
-    ts += `${i3}{\n`;
-    ts += `${i3}  number: ${step.number},\n`;
-    ts += `${i3}  title: "${escapeForTS(step.title)}",\n`;
-    ts += `${i3}  description:\n`;
-    ts += `${i3}    "${escapeForTS(step.description)}",\n`;
-    ts += `${i3}},\n`;
-  }
-  ts += `${i2}],\n`;
-
-  // alternativeCauses
-  ts += `${i2}alternativeCauses: [\n`;
-  for (const c of guide.alternativeCauses) {
-    ts += `${i3}"${escapeForTS(c)}",\n`;
-  }
-  ts += `${i2}],\n`;
-
-  // whenToCallPro
-  ts += `${i2}whenToCallPro:\n`;
-  ts += `${i3}"${escapeForTS(guide.whenToCallPro)}",\n`;
-
-  // meta
-  ts += `${i2}metaTitle:\n`;
-  ts += `${i3}"${escapeForTS(guide.metaTitle)}",\n`;
-  ts += `${i2}metaDescription:\n`;
-  ts += `${i3}"${escapeForTS(guide.metaDescription)}",\n`;
-
-  ts += `${i}}`;
-  return ts;
-}
-
-function main() {
-  // Load topics
-  const topics = JSON.parse(fs.readFileSync(TOPICS_FILE, "utf-8"));
-  console.log(`Loaded ${topics.length} topics from guide-topics.json`);
-
-  // Find existing guide IDs
-  const existingIds = getExistingGuideIds();
-  console.log(`Found ${existingIds.size} existing guide IDs`);
-
-  // Filter to topics that don't already have guides
-  const pendingTopics = topics.filter((t) => !existingIds.has(generateGuideId(t)));
-  console.log(`${pendingTopics.length} topics still need guides`);
-
-  if (pendingTopics.length === 0) {
-    console.log("All topics already have guides. Nothing to generate.");
+async function revalidate(paths) {
+  const secret = process.env.REVALIDATION_SECRET;
+  if (!secret) {
+    console.log("REVALIDATION_SECRET not set — skipping revalidation.");
     return;
   }
-
-  // Take the next batch
-  const batch = pendingTopics.slice(0, BATCH_SIZE);
-  const batchNumber = getNextBatchNumber();
-  const batchPadded = String(batchNumber).padStart(3, "0");
-  const batchFileName = `guides-batch-${batchPadded}.ts`;
-  const exportName = `batch${batchPadded}Guides`;
-
-  console.log(`\nGenerating batch ${batchPadded} with ${batch.length} guides...`);
-
-  // Generate guides
-  const guides = batch.map((t) => generateGuide(t));
-
-  // Write batch file
-  let fileContent = `import { Guide } from "@/lib/types";\n\n`;
-  fileContent += `export const ${exportName}: Guide[] = [\n`;
-  for (let i = 0; i < guides.length; i++) {
-    fileContent += guideToTS(guides[i]);
-    fileContent += ",\n";
+  try {
+    const res = await fetch("https://repairitfree.com/api/revalidate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-revalidation-secret": secret,
+      },
+      body: JSON.stringify({ paths }),
+    });
+    console.log(`Revalidation response: ${res.status} ${res.statusText}`);
+  } catch (err) {
+    console.error("Revalidation request failed:", err.message);
   }
-  fileContent += `];\n`;
-
-  const batchFilePath = path.join(DATA_DIR, batchFileName);
-  fs.writeFileSync(batchFilePath, fileContent, "utf-8");
-  console.log(`Wrote ${batchFilePath}`);
-
-  // Update guides.ts to import and include the new batch
-  let guidesTs = fs.readFileSync(GUIDES_INDEX, "utf-8");
-
-  // Add import line after the last import
-  const importLine = `import { ${exportName} } from "./${batchFileName.replace(".ts", "")}";`;
-  const lastImportIdx = guidesTs.lastIndexOf("import ");
-  const lastImportEnd = guidesTs.indexOf("\n", lastImportIdx);
-  guidesTs = guidesTs.slice(0, lastImportEnd + 1) + importLine + "\n" + guidesTs.slice(lastImportEnd + 1);
-
-  // Add spread into the guides array — find the last ...xxxGuides entry
-  const spreadPattern = /(\.\.\.\w+Guides),?\n/g;
-  let lastSpreadMatch;
-  let m;
-  while ((m = spreadPattern.exec(guidesTs)) !== null) {
-    lastSpreadMatch = m;
-  }
-
-  if (lastSpreadMatch) {
-    const insertPos = lastSpreadMatch.index + lastSpreadMatch[0].length;
-    const spreadLine = `  ...${exportName},\n`;
-    guidesTs = guidesTs.slice(0, insertPos) + spreadLine + guidesTs.slice(insertPos);
-  }
-
-  fs.writeFileSync(GUIDES_INDEX, guidesTs, "utf-8");
-  console.log(`Updated ${GUIDES_INDEX}`);
-
-  console.log(`\nDone! Generated ${guides.length} new guides in batch ${batchPadded}.`);
-  console.log(`Remaining topics: ${pendingTopics.length - batch.length}`);
 }
 
-main();
+async function main() {
+  const prisma = new PrismaClient();
+
+  try {
+    // Load topics
+    const topics = JSON.parse(fs.readFileSync(TOPICS_FILE, "utf-8"));
+    console.log(`Loaded ${topics.length} topics from guide-topics.json`);
+
+    // Build set of all candidate IDs for this run
+    const candidateIds = topics.map((t) => generateGuideId(t));
+
+    // Query DB for existing guides by composite slug key
+    const existingGuides = await prisma.guide.findMany({
+      where: { id: { in: candidateIds } },
+      select: { id: true },
+    });
+    const existingIds = new Set(existingGuides.map((g) => g.id));
+    console.log(`Found ${existingIds.size} existing guides in the database`);
+
+    // Filter to topics that don't already have guides
+    const pendingTopics = topics.filter(
+      (t) => !existingIds.has(generateGuideId(t))
+    );
+    console.log(`${pendingTopics.length} topics still need guides`);
+
+    if (pendingTopics.length === 0) {
+      console.log("All topics already have guides. Nothing to generate.");
+      return;
+    }
+
+    // Take the next batch
+    const batch = pendingTopics.slice(0, BATCH_SIZE);
+    console.log(`\nInserting batch of ${batch.length} guides into Postgres...`);
+
+    // Generate and insert guides
+    const inserted = [];
+    for (const topic of batch) {
+      const guide = generateGuide(topic);
+      try {
+        await insertGuide(prisma, guide);
+        inserted.push(guide);
+        console.log(`  + ${guide.id}`);
+      } catch (err) {
+        // Skip duplicates (race condition / unique constraint)
+        if (err.code === "P2002") {
+          console.log(`  ~ ${guide.id} (already exists, skipped)`);
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    console.log(`\nInserted ${inserted.length} new guides.`);
+    console.log(`Remaining topics: ${pendingTopics.length - batch.length}`);
+
+    // Trigger ISR revalidation
+    if (inserted.length > 0) {
+      await revalidate(["/", "/guides"]);
+    }
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
