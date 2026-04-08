@@ -158,32 +158,32 @@ export default async function GuidePage({
       {/* Quick diagnosis box */}
       <div className="bg-primary-light border border-blue-200 rounded-xl p-4 sm:p-5 mb-8">
         <p className="text-sm sm:text-base mb-4">{guide.quickDiagnosis}</p>
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-4 text-sm">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-4 text-sm items-center">
+          <DifficultyMeter difficulty={guide.difficulty} />
           <span className="flex items-center gap-1">
-            ⚡ Difficulty:{" "}
-            <strong
-              className={
-                guide.difficulty === "Easy"
-                  ? "text-success"
-                  : guide.difficulty === "Medium"
-                    ? "text-warning"
-                    : "text-danger"
-              }
-            >
-              {guide.difficulty}
-            </strong>
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-muted">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+            </svg>
+            <strong>{guide.timeEstimate}</strong>
           </span>
           <span className="flex items-center gap-1">
-            ⏱ <strong>{guide.timeEstimate}</strong>
-          </span>
-          <span className="flex items-center gap-1">
-            💰 Parts: <strong>{guide.costEstimate}</strong>
-          </span>
-          <span className="flex items-center gap-1 col-span-2">
-            🔧 Tools: {guide.toolsNeeded.join(", ")}
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-muted">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.798 7.45a.75.75 0 00-1.095 1.026L9.22 10l-1.517 1.524a.75.75 0 001.095 1.026L10 11.328l1.202 1.222a.75.75 0 001.095-1.026L10.78 10l1.517-1.524a.75.75 0 00-1.095-1.026L10 8.672 8.798 7.45z" clipRule="evenodd" />
+            </svg>
+            Parts: <strong>{guide.costEstimate}</strong>
           </span>
         </div>
       </div>
+
+      {/* Tools needed with icons */}
+      <section className="mb-8">
+        <h2 className="text-lg font-bold mb-3">Tools Needed</h2>
+        <div className="flex flex-wrap gap-2">
+          {guide.toolsNeeded.map((tool, i) => (
+            <ToolIcon key={i} name={tool} />
+          ))}
+        </div>
+      </section>
 
       {/* Watch the video */}
       <section className="mb-8">
@@ -201,16 +201,22 @@ export default async function GuidePage({
       {/* Safety warnings */}
       {guide.safetyWarnings.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
-          <h2 className="font-semibold text-red-700 text-sm mb-2">
+          <h2 className="font-semibold text-red-700 text-sm sm:text-base mb-2">
             ⚠️ Safety First
           </h2>
-          <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+          <ul className="list-disc list-inside text-sm sm:text-base text-red-700 space-y-1">
             {guide.safetyWarnings.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
           </ul>
         </div>
       )}
+
+      {/* Before you start checklist */}
+      <RepairChecklist
+        hasParts={guide.partsNeeded.length > 0}
+        hasSafetyWarnings={guide.safetyWarnings.length > 0}
+      />
 
       {/* Parts needed */}
       <section className="mb-8">
@@ -219,19 +225,55 @@ export default async function GuidePage({
           {guide.partsNeeded.map((part, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3 border border-border rounded-lg"
+              className="p-3 border border-border rounded-lg"
             >
-              <div>
-                <p className="font-medium text-sm">{part.name}</p>
-                <p className="text-xs text-muted">~{part.costRange}</p>
+              <div className="flex items-center justify-between mb-2 sm:mb-0">
+                <div>
+                  <p className="font-medium text-sm sm:text-base">{part.name}</p>
+                  <p className="text-xs text-muted">~{part.costRange}</p>
+                </div>
+                {/* Desktop buttons */}
+                <div className="hidden sm:flex gap-2">
+                  {part.amazonUrl && (
+                    <a
+                      href={part.amazonUrl}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      className="px-4 py-2 bg-yellow-400 text-yellow-900 rounded text-sm font-medium hover:bg-yellow-500 min-h-[44px] inline-flex items-center"
+                    >
+                      Amazon
+                    </a>
+                  )}
+                  {part.ebayUrl && (
+                    <a
+                      href={part.ebayUrl}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded text-sm font-medium hover:bg-blue-200 min-h-[44px] inline-flex items-center"
+                    >
+                      eBay
+                    </a>
+                  )}
+                  {part.ifixitUrl && (
+                    <a
+                      href={part.ifixitUrl}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded text-sm font-medium hover:bg-gray-200 min-h-[44px] inline-flex items-center"
+                    >
+                      iFixit
+                    </a>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2">
+              {/* Mobile: full-width stacked buttons */}
+              <div className="flex sm:hidden gap-2">
                 {part.amazonUrl && (
                   <a
                     href={part.amazonUrl}
                     target="_blank"
                     rel="noopener noreferrer sponsored"
-                    className="px-3 py-1.5 bg-yellow-400 text-yellow-900 rounded text-xs font-medium hover:bg-yellow-500"
+                    className="flex-1 py-2.5 bg-yellow-400 text-yellow-900 rounded text-sm font-medium hover:bg-yellow-500 text-center min-h-[44px] inline-flex items-center justify-center"
                   >
                     Amazon
                   </a>
@@ -241,7 +283,7 @@ export default async function GuidePage({
                     href={part.ebayUrl}
                     target="_blank"
                     rel="noopener noreferrer sponsored"
-                    className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200"
+                    className="flex-1 py-2.5 bg-blue-100 text-blue-700 rounded text-sm font-medium hover:bg-blue-200 text-center min-h-[44px] inline-flex items-center justify-center"
                   >
                     eBay
                   </a>
@@ -251,7 +293,7 @@ export default async function GuidePage({
                     href={part.ifixitUrl}
                     target="_blank"
                     rel="noopener noreferrer sponsored"
-                    className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200"
+                    className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded text-sm font-medium hover:bg-gray-200 text-center min-h-[44px] inline-flex items-center justify-center"
                   >
                     iFixit
                   </a>
@@ -268,15 +310,22 @@ export default async function GuidePage({
       {/* Step-by-step instructions */}
       <section className="mb-8">
         <h2 className="text-lg font-bold mb-4">Step-by-Step Repair</h2>
-        <ol className="space-y-4">
+        <ol className="space-y-6">
           {guide.steps.map((step) => (
-            <li key={step.number} className="flex gap-4">
-              <span className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
-                {step.number}
-              </span>
-              <div>
-                <h3 className="font-semibold text-sm">{step.title}</h3>
-                <p className="text-sm text-muted mt-1">{step.description}</p>
+            <li key={step.number}>
+              <StepProgress current={step.number} total={guide.steps.length} />
+              <div className="flex gap-3 sm:gap-4">
+                <span className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center text-base font-bold shrink-0 mt-0.5">
+                  {step.number}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base">{step.title}</h3>
+                  <p className="text-sm sm:text-base text-muted mt-1">{step.description}</p>
+                  <StepImagePlaceholder
+                    stepNumber={step.number}
+                    description={step.title}
+                  />
+                </div>
               </div>
             </li>
           ))}
@@ -287,12 +336,12 @@ export default async function GuidePage({
       {inlineLinks.length > 0 && (
         <div className="mb-8 p-4 bg-primary-light border border-blue-100 rounded-lg">
           <p className="text-sm font-medium mb-2">You might also like:</p>
-          <ul className="flex flex-wrap gap-x-4 gap-y-1">
+          <ul className="flex flex-col sm:flex-row sm:flex-wrap gap-y-2 sm:gap-x-4 sm:gap-y-1">
             {inlineLinks.map((g) => (
               <li key={g.id}>
                 <Link
                   href={`/guides/${g.categorySlug}/${g.brandSlug}/${g.problemSlug}`}
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm sm:text-base text-primary hover:underline"
                 >
                   {g.brand} {g.category} {g.problemTitle}
                 </Link>
@@ -305,7 +354,7 @@ export default async function GuidePage({
       {/* If that didn't work */}
       <section className="mb-8">
         <h2 className="text-lg font-bold mb-3">If That Didn&apos;t Work</h2>
-        <ul className="list-disc list-inside text-sm text-muted space-y-2">
+        <ul className="list-disc list-inside text-sm sm:text-base text-muted space-y-2">
           {guide.alternativeCauses.map((cause, i) => (
             <li key={i}>{cause}</li>
           ))}
@@ -314,8 +363,8 @@ export default async function GuidePage({
 
       {/* When to call a pro */}
       <section className="mb-8 bg-surface border border-border rounded-lg p-5">
-        <h2 className="font-bold text-sm mb-2">When to Call a Professional</h2>
-        <p className="text-sm text-muted">{guide.whenToCallPro}</p>
+        <h2 className="font-bold text-sm sm:text-base mb-2">When to Call a Professional</h2>
+        <p className="text-sm sm:text-base text-muted">{guide.whenToCallPro}</p>
       </section>
 
       {/* Related guides — 3 sections with up to 12 total links */}
