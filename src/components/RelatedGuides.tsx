@@ -43,7 +43,7 @@ function GuideSection({
   return (
     <div className="mb-6">
       <h3 className="text-base font-bold mb-3">{title}</h3>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {guides.map((g) => (
           <GuideCard key={g.id} guide={g} />
         ))}
