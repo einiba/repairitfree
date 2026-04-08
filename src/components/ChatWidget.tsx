@@ -45,6 +45,14 @@ export default function ChatWidget() {
     setInput("");
     setIsLoading(true);
 
+    // Analytics tracking
+    window.umami?.track("ai-chat", { message: trimmed });
+    fetch("/api/log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "chat", query: trimmed }),
+    }).catch(() => {});
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",

@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation";
 import { guides } from "@/data/guides";
 import type { Guide } from "@/lib/types";
 
+declare global {
+  interface Window {
+    umami?: {
+      track: (event: string, data?: Record<string, unknown>) => void;
+    };
+  }
+}
+
 interface SearchResult {
   guide: Guide;
   score: number;
@@ -93,7 +101,19 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
     debounceRef.current = setTimeout(() => runSearch(val), 300);
   }
 
-  function navigateToGuide(guide: Guide) {
+  function navigateToGuide(guide: Guide, fromClick = false) {
+    if (fromClick) {
+      window.umami?.track("search-click", { query, guide: guide.id });
+      fetch("/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "search-click",
+          query,
+          metadata: { guide: guide.id },
+        }),
+      }).catch(() => {});
+    }
     setIsOpen(false);
     setQuery("");
     router.push(
@@ -104,8 +124,14 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (activeIndex >= 0 && results[activeIndex]) {
-      navigateToGuide(results[activeIndex].guide);
+      navigateToGuide(results[activeIndex].guide, true);
     } else if (query.trim()) {
+      window.umami?.track("search", { query: query.trim() });
+      fetch("/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "search", query: query.trim() }),
+      }).catch(() => {});
       setIsOpen(false);
       router.push(`/diagnose?q=${encodeURIComponent(query.trim())}`);
     }
@@ -220,7 +246,7 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
                       ? "bg-blue-50"
                       : "hover:bg-gray-50"
                   }`}
-                  onMouseDown={() => navigateToGuide(r.guide)}
+                  onMouseDown={() => navigateToGuide(r.guide, true)}
                   onMouseEnter={() => setActiveIndex(i)}
                 >
                   <div className="flex items-start justify-between gap-2">
