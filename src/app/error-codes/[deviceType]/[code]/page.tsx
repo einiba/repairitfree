@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/Breadcrumb";
-import { getErrorCode, getErrorCodesByDevice } from "@/data/error-codes";
-import { guides } from "@/data/guides";
+import { getErrorCode, getErrorCodesByDevice } from "@/lib/queries";
+import { prisma } from "@/lib/db";
 
 export async function generateMetadata({
   params,
@@ -11,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ deviceType: string; code: string }>;
 }): Promise<Metadata> {
   const { deviceType, code } = await params;
-  const errorCode = getErrorCode(deviceType, code);
+  const errorCode = await getErrorCode(deviceType, code);
   if (!errorCode) return {};
   return {
     title: `${errorCode.deviceType} ${errorCode.code} Error Code — What It Means & How to Fix It`,
@@ -25,15 +25,29 @@ export default async function ErrorCodePage({
   params: Promise<{ deviceType: string; code: string }>;
 }) {
   const { deviceType, code } = await params;
-  const errorCode = getErrorCode(deviceType, code);
+  const errorCode = await getErrorCode(deviceType, code);
 
   if (!errorCode) notFound();
 
   const linkedGuide = errorCode.guideId
-    ? guides.find((g) => g.id === errorCode.guideId)
+    ? await prisma.guide.findUnique({
+        where: { id: errorCode.guideId },
+        select: {
+          brand: true,
+          category: true,
+          categorySlug: true,
+          brandSlug: true,
+          problemSlug: true,
+          problemTitle: true,
+          quickDiagnosis: true,
+          difficulty: true,
+          timeEstimate: true,
+          costEstimate: true,
+        },
+      })
     : null;
 
-  const relatedCodes = getErrorCodesByDevice(deviceType).filter(
+  const relatedCodes = (await getErrorCodesByDevice(deviceType)).filter(
     (c) => c.id !== errorCode.id
   );
 

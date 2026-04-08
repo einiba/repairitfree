@@ -3,22 +3,34 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Breadcrumb from "@/components/Breadcrumb";
-import { guides } from "@/data/guides";
-import type { Guide } from "@/lib/types";
 
-// Derive unique categories from guides data
-function getCategories(): { name: string; slug: string }[] {
-  const map = new Map<string, string>();
-  guides.forEach((g) => map.set(g.categorySlug, g.category));
-  return Array.from(map.entries())
-    .map(([slug, name]) => ({ slug, name }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+interface DiagnoseGuide {
+  id: string;
+  category: string;
+  categorySlug: string;
+  brand: string;
+  brandSlug: string;
+  problemSlug: string;
+  problemTitle: string;
+  difficulty: string;
+  timeEstimate: string;
+  costEstimate: string;
+  quickDiagnosis: string;
+  stepCount: number;
 }
 
-// Derive unique brands for a category
-function getBrands(categorySlug: string): { name: string; slug: string }[] {
+interface DiagnoseClientProps {
+  categories: { name: string; slug: string }[];
+  guideList: DiagnoseGuide[];
+}
+
+// Derive unique brands for a category from the guide list
+function getBrands(
+  guideList: DiagnoseGuide[],
+  categorySlug: string
+): { name: string; slug: string }[] {
   const map = new Map<string, string>();
-  guides
+  guideList
     .filter((g) => g.categorySlug === categorySlug)
     .forEach((g) => map.set(g.brandSlug, g.brand));
   return Array.from(map.entries())
@@ -28,11 +40,12 @@ function getBrands(categorySlug: string): { name: string; slug: string }[] {
 
 // Derive unique problems for a category + brand
 function getProblems(
+  guideList: DiagnoseGuide[],
   categorySlug: string,
   brandSlug: string
 ): { title: string; slug: string }[] {
   const map = new Map<string, string>();
-  guides
+  guideList
     .filter(
       (g) => g.categorySlug === categorySlug && g.brandSlug === brandSlug
     )
@@ -44,11 +57,12 @@ function getProblems(
 
 // Find exact matching guides
 function findGuides(
+  guideList: DiagnoseGuide[],
   categorySlug: string,
   brandSlug: string,
   problemSlug: string
-): Guide[] {
-  return guides.filter(
+): DiagnoseGuide[] {
+  return guideList.filter(
     (g) =>
       g.categorySlug === categorySlug &&
       g.brandSlug === brandSlug &&
@@ -58,11 +72,12 @@ function findGuides(
 
 // Find similar guides (same category) for fallback
 function findSimilarGuides(
+  guideList: DiagnoseGuide[],
   categorySlug: string,
   brandSlug: string,
   problemSlug: string
-): Guide[] {
-  return guides
+): DiagnoseGuide[] {
+  return guideList
     .filter(
       (g) =>
         g.categorySlug === categorySlug &&
@@ -77,7 +92,10 @@ const difficultyColor: Record<string, string> = {
   Hard: "bg-red-100 text-red-800",
 };
 
-export default function DiagnoseClient() {
+export default function DiagnoseClient({
+  categories,
+  guideList,
+}: DiagnoseClientProps) {
   const [step, setStep] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<{
     name: string;
@@ -92,39 +110,40 @@ export default function DiagnoseClient() {
     slug: string;
   } | null>(null);
 
-  const categories = useMemo(() => getCategories(), []);
   const brands = useMemo(
-    () => (selectedCategory ? getBrands(selectedCategory.slug) : []),
-    [selectedCategory]
+    () => (selectedCategory ? getBrands(guideList, selectedCategory.slug) : []),
+    [guideList, selectedCategory]
   );
   const problems = useMemo(
     () =>
       selectedCategory && selectedBrand
-        ? getProblems(selectedCategory.slug, selectedBrand.slug)
+        ? getProblems(guideList, selectedCategory.slug, selectedBrand.slug)
         : [],
-    [selectedCategory, selectedBrand]
+    [guideList, selectedCategory, selectedBrand]
   );
   const matchedGuides = useMemo(
     () =>
       selectedCategory && selectedBrand && selectedProblem
         ? findGuides(
+            guideList,
             selectedCategory.slug,
             selectedBrand.slug,
             selectedProblem.slug
           )
         : [],
-    [selectedCategory, selectedBrand, selectedProblem]
+    [guideList, selectedCategory, selectedBrand, selectedProblem]
   );
   const similarGuides = useMemo(
     () =>
       selectedCategory && selectedBrand && selectedProblem
         ? findSimilarGuides(
+            guideList,
             selectedCategory.slug,
             selectedBrand.slug,
             selectedProblem.slug
           )
         : [],
-    [selectedCategory, selectedBrand, selectedProblem]
+    [guideList, selectedCategory, selectedBrand, selectedProblem]
   );
 
   function goBack() {
@@ -360,8 +379,8 @@ export default function DiagnoseClient() {
                         <span>Time: {guide.timeEstimate}</span>
                         <span>Cost: {guide.costEstimate}</span>
                         <span>
-                          {guide.steps.length} step
-                          {guide.steps.length !== 1 ? "s" : ""}
+                          {guide.stepCount} step
+                          {guide.stepCount !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </Link>

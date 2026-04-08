@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { guides } from "@/data/guides";
-import type { Guide } from "@/lib/types";
 
 declare global {
   interface Window {
@@ -14,54 +12,17 @@ declare global {
 }
 
 interface SearchResult {
-  guide: Guide;
-  score: number;
-}
-
-function searchGuides(query: string): SearchResult[] {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) return [];
-
-  const words = trimmed.split(/\s+/).filter((w) => w.length > 0);
-
-  const results: SearchResult[] = [];
-
-  for (const guide of guides) {
-    const fields = [
-      guide.problemTitle,
-      guide.brand,
-      guide.category,
-      guide.quickDiagnosis,
-      guide.problemSlug.replace(/-/g, " "),
-      guide.categorySlug.replace(/-/g, " "),
-      guide.brandSlug.replace(/-/g, " "),
-    ];
-
-    const searchBlob = fields.join(" ").toLowerCase();
-
-    let score = 0;
-
-    // Check if the full query matches as a substring (strong signal)
-    if (searchBlob.includes(trimmed)) {
-      score += 10;
-    }
-
-    // Score individual word matches
-    for (const word of words) {
-      if (guide.brand.toLowerCase().includes(word)) score += 3;
-      if (guide.problemTitle.toLowerCase().includes(word)) score += 3;
-      if (guide.category.toLowerCase().includes(word)) score += 2;
-      if (guide.problemSlug.replace(/-/g, " ").includes(word)) score += 2;
-      if (guide.quickDiagnosis.toLowerCase().includes(word)) score += 1;
-    }
-
-    if (score > 0) {
-      results.push({ guide, score });
-    }
-  }
-
-  results.sort((a, b) => b.score - a.score);
-  return results.slice(0, 8);
+  id: string;
+  brand: string;
+  category: string;
+  categorySlug: string;
+  brandSlug: string;
+  problemSlug: string;
+  problemTitle: string;
+  quickDiagnosis: string;
+  difficulty: string;
+  timeEstimate: string;
+  costEstimate: string;
 }
 
 const difficultyStyles: Record<string, string> = {
@@ -81,17 +42,48 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const router = useRouter();
 
-  const runSearch = useCallback((q: string) => {
-    const r = searchGuides(q);
-    setResults(r);
-    setIsOpen(q.trim().length > 0);
-    setActiveIndex(-1);
+  const runSearch = useCallback(async (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed || trimmed.length < 2) {
+      setResults([]);
+      setIsOpen(false);
+      setIsLoading(false);
+      return;
+    }
+
+    // Abort any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(
+        `/api/search?q=${encodeURIComponent(trimmed)}`,
+        { signal: controller.signal }
+      );
+      if (!res.ok) throw new Error("Search failed");
+      const data: SearchResult[] = await res.json();
+      setResults(data);
+      setIsOpen(true);
+      setActiveIndex(-1);
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setResults([]);
+      setIsOpen(true);
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
+    }
   }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -101,30 +93,30 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
     debounceRef.current = setTimeout(() => runSearch(val), 300);
   }
 
-  function navigateToGuide(guide: Guide, fromClick = false) {
+  function navigateToGuide(result: SearchResult, fromClick = false) {
     if (fromClick) {
-      window.umami?.track("search-click", { query, guide: guide.id });
+      window.umami?.track("search-click", { query, guide: result.id });
       fetch("/api/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "search-click",
           query,
-          metadata: { guide: guide.id },
+          metadata: { guide: result.id },
         }),
       }).catch(() => {});
     }
     setIsOpen(false);
     setQuery("");
     router.push(
-      `/guides/${guide.categorySlug}/${guide.brandSlug}/${guide.problemSlug}`
+      `/guides/${result.categorySlug}/${result.brandSlug}/${result.problemSlug}`
     );
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (activeIndex >= 0 && results[activeIndex]) {
-      navigateToGuide(results[activeIndex].guide, true);
+      navigateToGuide(results[activeIndex], true);
     } else if (query.trim()) {
       window.umami?.track("search", { query: query.trim() });
       fetch("/api/log", {
@@ -166,10 +158,11 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Cleanup debounce on unmount
+  // Cleanup debounce and abort on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
     };
   }, []);
 
@@ -234,11 +227,15 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
           }`}
           role="listbox"
         >
-          {results.length > 0 ? (
+          {isLoading ? (
+            <div className="px-4 py-4 text-center">
+              <p className="text-sm text-muted">Searching...</p>
+            </div>
+          ) : results.length > 0 ? (
             <ul>
               {results.map((r, i) => (
                 <li
-                  key={r.guide.id}
+                  key={r.id}
                   role="option"
                   aria-selected={i === activeIndex}
                   className={`px-4 py-3 cursor-pointer border-b border-border last:border-b-0 transition-colors ${
@@ -246,26 +243,26 @@ export default function SearchAutocomplete({ variant, autoFocus }: Props) {
                       ? "bg-blue-50"
                       : "hover:bg-gray-50"
                   }`}
-                  onMouseDown={() => navigateToGuide(r.guide, true)}
+                  onMouseDown={() => navigateToGuide(r, true)}
                   onMouseEnter={() => setActiveIndex(i)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-semibold text-sm text-foreground truncate">
-                        {r.guide.brand} {r.guide.category} &mdash;{" "}
-                        {r.guide.problemTitle}
+                        {r.brand} {r.category} &mdash;{" "}
+                        {r.problemTitle}
                       </p>
                       <p className="text-xs text-muted truncate mt-0.5">
-                        {r.guide.quickDiagnosis.slice(0, 90)}
-                        {r.guide.quickDiagnosis.length > 90 ? "..." : ""}
+                        {r.quickDiagnosis.slice(0, 90)}
+                        {r.quickDiagnosis.length > 90 ? "..." : ""}
                       </p>
                     </div>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
-                        difficultyStyles[r.guide.difficulty] ?? ""
+                        difficultyStyles[r.difficulty] ?? ""
                       }`}
                     >
-                      {r.guide.difficulty}
+                      {r.difficulty}
                     </span>
                   </div>
                 </li>

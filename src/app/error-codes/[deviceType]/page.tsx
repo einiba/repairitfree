@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/Breadcrumb";
-import { getErrorCodesByDevice, getDeviceTypes } from "@/data/error-codes";
+import { getErrorCodesByDevice, getDeviceTypes } from "@/lib/queries";
 
 export async function generateMetadata({
   params,
@@ -10,7 +10,7 @@ export async function generateMetadata({
   params: Promise<{ deviceType: string }>;
 }): Promise<Metadata> {
   const { deviceType } = await params;
-  const codes = getErrorCodesByDevice(deviceType);
+  const codes = await getErrorCodesByDevice(deviceType);
   if (codes.length === 0) return {};
   const deviceName = codes[0].deviceType;
   return {
@@ -25,12 +25,12 @@ export default async function DeviceErrorCodesPage({
   params: Promise<{ deviceType: string }>;
 }) {
   const { deviceType } = await params;
-  const codes = getErrorCodesByDevice(deviceType);
+  const codes = await getErrorCodesByDevice(deviceType);
 
   if (codes.length === 0) notFound();
 
   const deviceName = codes[0].deviceType;
-  const allDeviceTypes = getDeviceTypes();
+  const allDeviceTypes = await getDeviceTypes();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -70,14 +70,14 @@ export default async function DeviceErrorCodesPage({
         <h2 className="text-lg font-semibold mb-3">Other Device Types</h2>
         <div className="flex flex-wrap gap-2">
           {allDeviceTypes
-            .filter((d) => d.slug !== deviceType)
+            .filter((d) => d.deviceTypeSlug !== deviceType)
             .map((d) => (
               <Link
-                key={d.slug}
-                href={`/error-codes/${d.slug}`}
+                key={d.deviceTypeSlug}
+                href={`/error-codes/${d.deviceTypeSlug}`}
                 className="px-3 py-1.5 border border-border rounded-lg text-sm hover:border-primary"
               >
-                {d.name}
+                {d.deviceType}
               </Link>
             ))}
         </div>
