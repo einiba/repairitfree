@@ -2,18 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import SearchAutocomplete from "@/components/SearchAutocomplete";
 
 export default function Header() {
-  const [query, setQuery] = useState("");
-  const router = useRouter();
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (query.trim()) {
-      router.push(`/diagnose?q=${encodeURIComponent(query.trim())}`);
-    }
-  }
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="border-b border-border bg-white sticky top-0 z-50">
@@ -25,23 +17,12 @@ export default function Header() {
           </span>
         </Link>
 
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden sm:flex">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="What's broken? (e.g., 'Samsung dryer not heating')"
-            className="w-full px-4 py-2 border border-border rounded-l-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-primary text-white rounded-r-lg hover:bg-primary-dark text-sm font-medium"
-          >
-            Search
-          </button>
-        </form>
+        <div className="flex-1 max-w-xl hidden sm:block">
+          <SearchAutocomplete variant="header" />
+        </div>
 
-        <nav className="flex items-center gap-4 text-sm shrink-0">
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-4 text-sm shrink-0">
           <Link
             href="/diagnose"
             className="text-muted hover:text-primary font-medium"
@@ -49,38 +30,77 @@ export default function Header() {
             Diagnose
           </Link>
           <Link
-            href="/guides/washing-machines"
-            className="text-muted hover:text-primary font-medium hidden md:block"
+            href="/guides"
+            className="text-muted hover:text-primary font-medium"
           >
             Guides
           </Link>
           <Link
             href="/about"
-            className="text-muted hover:text-primary font-medium hidden md:block"
+            className="text-muted hover:text-primary font-medium"
           >
             About
           </Link>
         </nav>
+
+        {/* Mobile hamburger button */}
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="md:hidden flex items-center justify-center w-11 h-11 rounded-lg hover:bg-surface transition-colors shrink-0 ml-auto"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+        >
+          {menuOpen ? (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
       </div>
 
-      {/* Mobile search */}
+      {/* Mobile search — always visible on small screens */}
       <div className="sm:hidden px-4 pb-3">
-        <form onSubmit={handleSearch} className="flex">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="What's broken?"
-            className="w-full px-3 py-2 border border-border rounded-l-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <button
-            type="submit"
-            className="px-3 py-2 bg-primary text-white rounded-r-lg hover:bg-primary-dark text-sm"
-          >
-            Go
-          </button>
-        </form>
+        <SearchAutocomplete variant="mobile" />
       </div>
+
+      {/* Mobile nav menu */}
+      {menuOpen && (
+        <nav className="md:hidden border-t border-border bg-white px-4 py-3">
+          <ul className="space-y-1">
+            <li>
+              <Link
+                href="/diagnose"
+                onClick={() => setMenuOpen(false)}
+                className="block py-3 px-3 text-base font-medium text-foreground hover:bg-surface rounded-lg transition-colors"
+              >
+                Diagnose
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/guides"
+                onClick={() => setMenuOpen(false)}
+                className="block py-3 px-3 text-base font-medium text-foreground hover:bg-surface rounded-lg transition-colors"
+              >
+                Guides
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/about"
+                onClick={() => setMenuOpen(false)}
+                className="block py-3 px-3 text-base font-medium text-foreground hover:bg-surface rounded-lg transition-colors"
+              >
+                About
+              </Link>
+            </li>
+          </ul>
+        </nav>
+      )}
     </header>
   );
 }

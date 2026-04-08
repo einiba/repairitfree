@@ -2,6 +2,7 @@ import Link from "next/link";
 import CategoryCard from "@/components/CategoryCard";
 import { categories } from "@/data/categories";
 import { guides } from "@/data/guides";
+import SearchAutocomplete from "@/components/SearchAutocomplete";
 
 export default function HomePage() {
   return (
@@ -17,24 +18,7 @@ export default function HomePage() {
             instructions, parts lists, and cost estimates — all free.
           </p>
 
-          <form
-            action="/diagnose"
-            method="get"
-            className="flex max-w-lg mx-auto"
-          >
-            <input
-              type="text"
-              name="q"
-              placeholder="What's broken? (e.g., 'Samsung dryer not heating')"
-              className="flex-1 px-4 py-3 rounded-l-lg text-foreground text-sm focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="px-6 py-3 bg-success text-white rounded-r-lg font-semibold hover:bg-green-700 text-sm"
-            >
-              Diagnose
-            </button>
-          </form>
+          <SearchAutocomplete variant="hero" />
         </div>
       </section>
 
