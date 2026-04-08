@@ -17,11 +17,11 @@ spec:
             secretKeyRef:
               name: repairitfree-secrets
               key: DATABASE_URL
-        - name: ANTHROPIC_API_KEY
+        - name: REPLICATE_API_TOKEN
           valueFrom:
             secretKeyRef:
               name: repairitfree-secrets
-              key: ANTHROPIC_API_KEY
+              key: REPLICATE_API_TOKEN
         - name: DO_SPACES_KEY
           valueFrom:
             secretKeyRef:

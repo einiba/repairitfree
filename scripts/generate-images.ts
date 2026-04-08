@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { PrismaClient } from "@prisma/client";
 import sharp from "sharp";
@@ -24,9 +23,7 @@ interface ManifestEntry {
 // ── Clients ─────────────────────────────────────────────────────────
 const prisma = new PrismaClient();
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 
 const s3 = new S3Client({
   endpoint: `https://${REGION}.digitaloceanspaces.com`,
@@ -41,34 +38,49 @@ const s3 = new S3Client({
 // ── Helpers ─────────────────────────────────────────────────────────
 
 async function generateImage(prompt: string): Promise<Buffer> {
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: prompt,
-          },
-        ],
+  const response = await fetch("https://api.replicate.com/v1/predictions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${REPLICATE_API_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      version: "black-forest-labs/flux-schnell",
+      input: {
+        prompt: prompt,
+        num_outputs: 1,
+        aspect_ratio: "16:9",
+        output_format: "webp",
+        output_quality: 80,
       },
-    ],
+    }),
   });
 
-  // Extract the image from the response
-  for (const block of response.content) {
-    if (block.type === "image") {
-      const imageData = block.source.data;
-      return Buffer.from(imageData, "base64");
-    }
+  const prediction = await response.json();
+
+  // Poll for completion
+  let result = prediction;
+  while (result.status !== "succeeded" && result.status !== "failed") {
+    await new Promise((r) => setTimeout(r, 1000));
+    const pollResponse = await fetch(result.urls.get, {
+      headers: { "Authorization": `Bearer ${REPLICATE_API_TOKEN}` },
+    });
+    result = await pollResponse.json();
   }
 
-  throw new Error("No image returned from Claude API");
+  if (result.status === "failed") {
+    throw new Error(`Replicate failed: ${result.error}`);
+  }
+
+  // Download the image
+  const imageUrl = result.output[0];
+  const imageResponse = await fetch(imageUrl);
+  return Buffer.from(await imageResponse.arrayBuffer());
 }
 
 async function convertToWebP(imageBuffer: Buffer): Promise<Buffer> {
+  // Flux outputs WebP directly when output_format is "webp",
+  // but run through sharp as a safety net for format consistency
   return sharp(imageBuffer).webp({ quality: 80 }).toBuffer();
 }
 
@@ -91,7 +103,7 @@ async function uploadToSpaces(
 async function processEntry(entry: ManifestEntry): Promise<void> {
   const objectKey = `guides/${entry.guideId}/step-${entry.stepNumber}.webp`;
 
-  // Generate image via Claude
+  // Generate image via Replicate Flux
   const rawImage = await generateImage(entry.prompt);
 
   // Convert to WebP
