@@ -11,7 +11,7 @@ const PROGRESS_INTERVAL = 50;
 
 const BUCKET = process.env.DO_SPACES_BUCKET ?? "repairitfree-images";
 const REGION = process.env.DO_SPACES_REGION ?? "nyc3";
-const CDN_BASE = `https://${BUCKET}.${REGION}.cdn.digitaloceanspaces.com`;
+const CDN_BASE = `https://${BUCKET}.${REGION}.digitaloceanspaces.com`;
 
 interface ManifestEntry {
   guideId: string;
