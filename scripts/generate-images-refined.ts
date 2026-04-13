@@ -263,7 +263,7 @@ async function uploadToSpaces(buffer: Buffer, key: string): Promise<string> {
       ACL: "public-read",
     })
   );
-  return `https://${SPACES_BUCKET}.${SPACES_REGION}.cdn.digitaloceanspaces.com/${key}`;
+  return `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${key}`;
 }
 
 async function updateStepImage(stepId: string, imageUrl: string) {
