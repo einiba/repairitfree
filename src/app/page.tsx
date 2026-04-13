@@ -1,10 +1,34 @@
 import Link from "next/link";
 import CategoryCard from "@/components/CategoryCard";
-import { categories } from "@/data/categories";
-import { guides } from "@/data/guides";
+import { getCategories, getAllGuideCount } from "@/lib/queries";
+import { prisma } from "@/lib/db";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
 
-export default function HomePage() {
+export const revalidate = 3600;
+
+export default async function HomePage() {
+  const [categories, guideCount, popularGuides] = await Promise.all([
+    getCategories(),
+    getAllGuideCount(),
+    prisma.guide.findMany({
+      take: 12,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        brand: true,
+        category: true,
+        categorySlug: true,
+        brandSlug: true,
+        problemSlug: true,
+        problemTitle: true,
+        difficulty: true,
+        timeEstimate: true,
+        costEstimate: true,
+        quickDiagnosis: true,
+      },
+    }),
+  ]);
+
   return (
     <div>
       {/* Hero */}
@@ -27,18 +51,18 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto flex justify-center gap-8 sm:gap-16 text-center">
           <div>
             <p className="text-xl font-bold text-primary">
-              {(guides.length * 247).toLocaleString()}+
+              {(guideCount * 247).toLocaleString()}+
             </p>
             <p className="text-xs text-muted">Repairs completed</p>
           </div>
           <div>
             <p className="text-xl font-bold text-success">
-              ${(guides.length * 247 * 85).toLocaleString()}+
+              ${(guideCount * 247 * 85).toLocaleString()}+
             </p>
             <p className="text-xs text-muted">Saved by our community</p>
           </div>
           <div>
-            <p className="text-xl font-bold text-primary">{guides.length}+</p>
+            <p className="text-xl font-bold text-primary">{guideCount}+</p>
             <p className="text-xs text-muted">Free guides</p>
           </div>
         </div>
@@ -62,7 +86,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold mb-6">Popular Repairs</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {guides.map((guide) => (
+            {popularGuides.map((guide) => (
               <Link
                 key={guide.id}
                 href={`/guides/${guide.categorySlug}/${guide.brandSlug}/${guide.problemSlug}`}
